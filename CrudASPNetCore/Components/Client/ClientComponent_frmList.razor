@@ -1,0 +1,187 @@
+﻿@using Entities
+@using Business
+@inject NavigationManager NavManager
+<div class="row">
+    <div class="col-lg-10">
+        <h4><i class="fa fa-list"></i> Client List</h4>
+    </div>
+    <div class="col-lg-2">
+        <button type="button" class="btn btn-success w-100" @onclick="()=>OpenCreateDialog()"><i class="fa fa-save"></i> Create Client</button>
+    </div>
+</div>
+<hr />
+<div class="form-group" style="display:flex;margin-bottom:10px;">
+    <label>Search:  </label>
+    <input style="width:50%" @bind-value="@busqueda" class="form-control" @onkeydown="Buscar" />
+</div>
+<table class="table table-hover table-bordered">
+    <thead>
+        <tr style="background-color:lightgray;">
+            <th>Name</th>
+            <th>Lastname</th>
+            <th>Birthday</th>
+            <th>Sex</th>
+            <th>Departament</th>
+            <th>Direction</th>
+            <th>Image</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (clients1.Count != 0)
+        {
+            @foreach (var client1 in clients1)
+            {
+
+                client = B_Client.ClientById(client1);
+                <tr>
+                    <td>@client.Name</td>
+                    <td>@client.LastName</td>
+                    <td>@client.Birthday.ToString().Split()[0]</td>
+                    <td>@client.Sex</td>
+                    <td>@client.Department</td>
+                    <td>@client.Direction</td>
+                    <td>
+                        @if (!string.IsNullOrEmpty(client.ImageFileName))
+                        {
+                            <div>
+                                <img src="@($"data:image/png;base64,{Convert.ToBase64String(client.ProfileImage)}")" alt="Image Preview" style="width: 100px;" />
+                            </div>
+                        }
+                    </td>
+                    <td>
+                        <div class="btn-group" role="group" aria-label="Basic example">
+                            <button type="button" @onclick="@(()=>OpenUpdatePopup(@client.ClientId))" class="btn btn-primary"><i class="fa fa-edit"></i>  Editar</button>
+                            <button type="button" @onclick="@(()=>DeleteClient(@client))" class="btn btn-danger"><i class="fa fa-edit"></i>Delete</button>
+                        </div>
+                    </td>
+                </tr>
+            }
+        }
+        else
+        {
+            @foreach (var client in clients)
+            {
+
+                /*diaslibres = B_DiasLibres.DiasLibresByLine_Codi(client.Line_Codi);
+                if (diaslibres == null)
+                {
+                diaslib = 0;
+                }
+                else
+                {
+                diaslib = diaslibres.Dias_Lib;
+                }
+                    */
+                <tr>
+                    <td>@client.Name</td>
+                    <td>@client.LastName</td>
+                    <td>@client.Birthday.ToString().Split()[0]</td>
+                    <td>@client.Sex</td>
+                    <td>@client.Department</td>
+                    <td>@client.Direction</td>
+                    <td>
+                        @if (!string.IsNullOrEmpty(client.ImageFileName))
+                        {
+                            <div>
+                                <img src="@($"data:image/png;base64,{Convert.ToBase64String(client.ProfileImage)}")" alt="Image Preview" style="width: 100px;" />
+                            </div>
+                        }
+                    </td>
+                    <td>
+                        <div class="btn-group" role="group" aria-label="Basic example">
+                            <button type="button" @onclick="@(()=>OpenUpdatePopup(@client.ClientId))" class="btn btn-primary"><i class="fa fa-edit"></i>Edit</button>
+                            <button type="button" @onclick="@(()=>DeleteClient(@client))" class="btn btn-danger"><i class="fa fa-edit"></i>Delete</button>
+                        </div>
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+
+@if (CreateDialogOpen)
+{
+    <ClientComponent_mdlCreate OnClose="@OnCreateDialogClose"></ClientComponent_mdlCreate>
+}
+@if (UpdatePopupOpen)
+{
+    <ClientComponent_mdlUpdate OnClose="@OnUpdate_OpenClosePopup" clientid="@clientid">
+    </ClientComponent_mdlUpdate>
+}
+
+@code {
+    public List<Client> clients = new List<Client>();
+    List<int> clients1 = new List<int>();
+    Client client = new Client();
+    string busqueda = "";
+    string filtro = "";
+    protected override async Task OnInitializedAsync()
+    {
+        clients = B_Client.ClientList();
+    }
+    public bool UpdatePopupOpen { get; set; }
+    public bool DeletePopupOpen { get; set; }
+    public bool CreateDialogOpen { get; set; }
+    public int clientid { get; set; }
+    private void Buscar(KeyboardEventArgs args)
+    {
+        if (args.Key != "Enter" && args.Key != "Tab" && args.Key != "CapsLock")
+        {
+            if (args.Key == "Backspace")
+            {
+                for (int i = 0; i < busqueda.Length; i++)
+                {
+                    busqueda = busqueda.Remove(busqueda.Length - 1);
+                    break;
+                }
+            }
+            else
+            {
+                busqueda = busqueda + args.Key;
+            }
+        }
+        clients1 = B_Client.ClientListFilter(busqueda);
+        //filtro = filtro+busqueda + args.Key;
+        //busqueda = e.Value.ToString();
+    }
+    private void DeleteClient(Client client)
+    {
+        B_Client.DeleteClient(client);
+        OnInitializedAsync();
+    }
+    private void OnCreateDialogClose(bool accepted)
+    {
+        CreateDialogOpen = false;
+        StateHasChanged();
+        OnInitializedAsync();
+    }
+    private void OnUpdate_OpenClosePopup(bool accepted)
+    {
+        UpdatePopupOpen = false;
+        StateHasChanged();
+        OnInitializedAsync();
+    }
+    private void OnDelete_OpenClosePopup(bool accepted)
+    {
+        DeletePopupOpen = false;
+        StateHasChanged();
+        OnInitializedAsync();
+    }
+    private void OpenCreateDialog()
+    {
+        CreateDialogOpen = true;
+        StateHasChanged();
+    }
+    private void OpenUpdatePopup(int id)
+    {
+        clientid = id;
+        UpdatePopupOpen = true;
+        StateHasChanged();
+    }
+    private void OpenDeletePopup(int id)
+    {
+        clientid = id;
+        DeletePopupOpen = true;
+        StateHasChanged();
+    }
+}
